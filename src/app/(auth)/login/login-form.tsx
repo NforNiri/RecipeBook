@@ -3,7 +3,13 @@
 import { useState } from "react";
 import { createBrowserClient } from "@/lib/db/client";
 
-export default function LoginForm({ initialError }: { initialError?: string }) {
+export default function LoginForm({
+  initialError,
+  isInviteOnly,
+}: {
+  initialError?: string;
+  isInviteOnly?: boolean;
+}) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [usePassword, setUsePassword] = useState(false);
@@ -61,6 +67,41 @@ export default function LoginForm({ initialError }: { initialError?: string }) {
           boxShadow: "var(--shadow-lg-val)",
         }}
       >
+        {/* Invite-only notice */}
+        {isInviteOnly && (
+          <div
+            style={{
+              marginBottom: "1.5rem",
+              padding: "1rem 1.25rem",
+              borderRadius: "var(--radius-md)",
+              backgroundColor: "color-mix(in srgb, var(--status-warning) 12%, transparent)",
+              border: "1px solid color-mix(in srgb, var(--status-warning) 40%, transparent)",
+            }}
+          >
+            <p
+              style={{
+                fontFamily: "var(--font-inter, sans-serif)",
+                fontSize: "0.9375rem",
+                fontWeight: 600,
+                color: "var(--ink-primary)",
+                marginBottom: "0.25rem",
+              }}
+            >
+              This app is invite-only.
+            </p>
+            <p
+              style={{
+                fontFamily: "var(--font-inter, sans-serif)",
+                fontSize: "0.875rem",
+                color: "var(--ink-secondary)",
+                lineHeight: 1.5,
+              }}
+            >
+              Ask Niri for an invitation, then try the link in your email again.
+            </p>
+          </div>
+        )}
+
         {/* Logo / wordmark */}
         <div className="mb-8 text-center">
           <h1

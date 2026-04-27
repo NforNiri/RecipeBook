@@ -241,6 +241,28 @@ export async function rotateShareId(recipeId: string): Promise<void> {
   }
 }
 
+// ── Family ratings ─────────────────────────────────────────────────────────
+
+export async function upsertFamilyRating(
+  recipeId: string,
+  stars: number,
+  comment: string | null
+): Promise<void> {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const { error } = await supabase.from("family_ratings").upsert(
+    { recipe_id: recipeId, user_id: user.id, stars, comment: comment || null },
+    { onConflict: "recipe_id,user_id" }
+  );
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/recipes/[slug]`, "page");
+}
+
 // ── Cook log ───────────────────────────────────────────────────────────────
 
 export async function logCookEvent(

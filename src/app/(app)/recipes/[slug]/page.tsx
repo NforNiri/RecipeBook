@@ -1,12 +1,21 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Clock, Users, Pencil } from "lucide-react";
+import { Clock, Users, Pencil, Star } from "lucide-react";
+import { PrintButton } from "@/components/recipe/print-button";
 import { getRecipeBySlug } from "@/lib/db/queries/recipes";
-import { getOwnerRating, getGuestRatingsSummary } from "@/lib/db/queries/ratings";
+import {
+  getOwnerRating,
+  getGuestRatingsSummary,
+  getFamilyRatings,
+  getMyFamilyRating,
+  type FamilyRating,
+} from "@/lib/db/queries/ratings";
+import { getServerProfile } from "@/lib/db/server";
 import { RecipeHero } from "@/components/recipe/recipe-hero";
 import { InstructionsView } from "@/components/recipe/instructions-view";
 import { IngredientsList } from "@/components/recipe/ingredients-list";
 import { RatingStars } from "@/components/recipe/rating-stars";
+import { FamilyRatingPanel } from "@/components/recipe/family-rating-panel";
 import { CookButton } from "@/components/recipe/cook-button";
 import { CookHistory } from "@/components/recipe/cook-history";
 // SuggestionsPanel is owner-only — absent from the public /r/[shareId] route.
@@ -80,10 +89,17 @@ export default async function RecipePage({ params }: PageProps) {
   const recipe = await getRecipeBySlug(slug);
   if (!recipe) notFound();
 
-  const [ownerRating, guestRatings] = await Promise.all([
-    getOwnerRating(recipe.id),
-    recipe.isPublic ? getGuestRatingsSummary(recipe.id) : null,
-  ]);
+  const profile = await getServerProfile();
+  const isOwner = profile?.role === "owner";
+  const isFamilyMember = profile?.role === "family";
+
+  const [ownerRating, guestRatings, familyRatings, myFamilyRating] =
+    await Promise.all([
+      isOwner ? getOwnerRating(recipe.id) : null,
+      recipe.isPublic ? getGuestRatingsSummary(recipe.id) : null,
+      isOwner ? getFamilyRatings(recipe.id) : null,
+      isFamilyMember ? getMyFamilyRating(recipe.id) : null,
+    ]);
 
   const prepStr = formatTime(recipe.prepMinutes);
   const cookStr = formatTime(recipe.cookMinutes);
@@ -97,7 +113,7 @@ export default async function RecipePage({ params }: PageProps) {
       }}
     >
       {/* Hero */}
-      <div style={{ marginBottom: 32 }}>
+      <div className="recipe-hero" style={{ marginBottom: 32 }}>
         <RecipeHero
           imageUrl={recipe.heroImageUrl}
           title={recipe.title}
@@ -107,12 +123,12 @@ export default async function RecipePage({ params }: PageProps) {
 
       {/* Content + sidebar layout */}
       <div
+        className="recipe-layout md:grid-cols-[1fr_260px]"
         style={{
           display: "grid",
           gridTemplateColumns: "1fr",
           gap: 40,
         }}
-        className="md:grid-cols-[1fr_260px]"
       >
         {/* ─── Main column ─────────────────────────────────────── */}
         <div>
@@ -139,32 +155,40 @@ export default async function RecipePage({ params }: PageProps) {
               {recipe.title}
             </h1>
 
-            <Link
-              href={`/recipes/${slug}/edit`}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                flexShrink: 0,
-                marginTop: 8,
-                padding: "8px 16px",
-                borderRadius: "var(--radius-md)",
-                border: "1px solid var(--border-default)",
-                backgroundColor: "transparent",
-                color: "var(--ink-secondary)",
-                textDecoration: "none",
-                fontFamily: "var(--font-inter, sans-serif)",
-                fontSize: "0.875rem",
-                fontWeight: 500,
-              }}
-            >
-              <Pencil size={14} />
-              Edit
-            </Link>
+            {isOwner && (
+              <div
+                data-no-print
+                style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}
+              >
+                <Link
+                  href={`/recipes/${slug}/edit`}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    marginTop: 8,
+                    padding: "8px 16px",
+                    borderRadius: "var(--radius-md)",
+                    border: "1px solid var(--border-default)",
+                    backgroundColor: "transparent",
+                    color: "var(--ink-secondary)",
+                    textDecoration: "none",
+                    fontFamily: "var(--font-inter, sans-serif)",
+                    fontSize: "0.875rem",
+                    fontWeight: 500,
+                  }}
+                >
+                  <Pencil size={14} />
+                  Edit
+                </Link>
+                <PrintButton />
+              </div>
+            )}
           </div>
 
           {recipe.description && (
             <p
+              className="recipe-description"
               style={{
                 fontFamily: "var(--font-source-serif, Georgia, serif)",
                 fontSize: "1.125rem",
@@ -179,7 +203,7 @@ export default async function RecipePage({ params }: PageProps) {
 
           {/* Tags */}
           {recipe.tags.length > 0 && (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 32 }}>
+            <div className="recipe-tags" style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 32 }}>
               {recipe.tags.map((tag) => (
                 <span
                   key={tag}
@@ -200,8 +224,9 @@ export default async function RecipePage({ params }: PageProps) {
           )}
 
           {/* Ingredients */}
-          <section style={{ marginBottom: 40 }}>
+          <section className="recipe-ingredients" style={{ marginBottom: 40 }}>
             <h2
+              className="recipe-section-heading"
               style={{
                 fontFamily: "var(--font-fraunces, Georgia, serif)",
                 fontSize: "1.5rem",
@@ -219,8 +244,9 @@ export default async function RecipePage({ params }: PageProps) {
           </section>
 
           {/* Instructions */}
-          <section>
+          <section className="recipe-instructions">
             <h2
+              className="recipe-section-heading"
               style={{
                 fontFamily: "var(--font-fraunces, Georgia, serif)",
                 fontSize: "1.5rem",
@@ -237,8 +263,12 @@ export default async function RecipePage({ params }: PageProps) {
             <InstructionsView doc={recipe.instructions} />
           </section>
 
-          {/* AI Suggestions — owner-only; absent from the public /r/[shareId] route */}
-          <SuggestionsPanel recipeId={recipe.id} />
+          {/* AI Suggestions — owner-only, not printed */}
+          {isOwner && (
+            <div data-no-print>
+              <SuggestionsPanel recipeId={recipe.id} />
+            </div>
+          )}
         </div>
 
         {/* ─── Sidebar ─────────────────────────────────────────── */}
@@ -256,15 +286,23 @@ export default async function RecipePage({ params }: PageProps) {
               top: 24,
             }}
           >
-            {/* Star rating */}
-            <RatingStars
-              recipeId={recipe.id}
-              initialRating={ownerRating?.stars ?? null}
-            />
+            {/* Rating — owner sees their own star rating; family member sees their rating panel */}
+            {isOwner && (
+              <RatingStars
+                recipeId={recipe.id}
+                initialRating={ownerRating?.stars ?? null}
+              />
+            )}
+            {isFamilyMember && (
+              <FamilyRatingPanel
+                recipeId={recipe.id}
+                initialRating={myFamilyRating}
+              />
+            )}
 
             {/* Cook this button */}
             <div style={divider}>
-              <CookButton recipeId={recipe.id} />
+              <CookButton recipeId={recipe.id} slug={slug} />
             </div>
 
             {/* Metadata */}
@@ -299,10 +337,15 @@ export default async function RecipePage({ params }: PageProps) {
               )}
             </div>
 
-            {/* Cook history */}
+            {/* Cook history — owner and family members both have a cook log */}
             <div style={divider}>
               <CookHistory recipeId={recipe.id} />
             </div>
+
+            {/* Family ratings panel — owner sees all family member ratings */}
+            {isOwner && familyRatings && familyRatings.length > 0 && (
+              <FamilyRatingsDisplay ratings={familyRatings} />
+            )}
 
             {/* Public guest ratings — only shown when recipe is public and has ratings */}
             {recipe.isPublic && guestRatings && (
@@ -310,6 +353,97 @@ export default async function RecipePage({ params }: PageProps) {
             )}
           </div>
         </aside>
+      </div>
+    </div>
+  );
+}
+
+function StarDisplay({ stars }: { stars: number }) {
+  return (
+    <span style={{ display: "inline-flex", gap: 2 }}>
+      {[1, 2, 3, 4, 5].map((n) => (
+        <Star
+          key={n}
+          size={13}
+          fill={n <= stars ? "oklch(72% 0.18 60)" : "none"}
+          stroke={n <= stars ? "oklch(72% 0.18 60)" : "var(--ink-tertiary)"}
+          strokeWidth={1.5}
+        />
+      ))}
+    </span>
+  );
+}
+
+function FamilyRatingsDisplay({ ratings }: { ratings: FamilyRating[] }) {
+  return (
+    <div
+      style={{
+        paddingTop: 16,
+        marginTop: 4,
+        borderTop: "1px solid var(--border-default)",
+      }}
+    >
+      <p
+        style={{
+          fontFamily: "var(--font-inter, sans-serif)",
+          fontSize: "0.6875rem",
+          fontWeight: 500,
+          letterSpacing: "0.06em",
+          textTransform: "uppercase",
+          color: "var(--ink-tertiary)",
+          marginBottom: 10,
+        }}
+      >
+        Family ratings
+      </p>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {ratings.map((r) => (
+          <div
+            key={r.userId}
+            style={{
+              padding: "10px 12px",
+              borderRadius: "var(--radius-md)",
+              backgroundColor: "var(--bg-subtle)",
+              border: "1px solid var(--border-default)",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 8,
+                marginBottom: r.comment ? 4 : 0,
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: "var(--font-inter, sans-serif)",
+                  fontSize: "0.8125rem",
+                  fontWeight: 500,
+                  color: "var(--ink-primary)",
+                }}
+              >
+                {r.displayName ?? "Family member"}
+              </span>
+              <StarDisplay stars={r.stars} />
+            </div>
+            {r.comment && (
+              <p
+                style={{
+                  fontFamily: "var(--font-source-serif, Georgia, serif)",
+                  fontSize: "0.875rem",
+                  color: "var(--ink-secondary)",
+                  lineHeight: 1.5,
+                  margin: 0,
+                }}
+              >
+                &ldquo;{r.comment}&rdquo;
+              </p>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );

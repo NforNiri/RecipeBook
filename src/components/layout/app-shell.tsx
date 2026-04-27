@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpen, PlusCircle, Link2, Camera } from "lucide-react";
+import { BookOpen, PlusCircle, Link2, Camera, Settings } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
 import { SignOutButton } from "./sign-out-button";
 import {
@@ -11,9 +11,11 @@ import type { RecipeFilterCounts } from "@/lib/recipe/filter-options";
 interface AppShellProps {
   children: React.ReactNode;
   filterCounts: RecipeFilterCounts;
+  role?: "owner" | "family";
 }
 
-export function AppShell({ children, filterCounts }: AppShellProps) {
+export function AppShell({ children, filterCounts, role }: AppShellProps) {
+  const isOwner = role === "owner";
   return (
     <div style={{ display: "flex", minHeight: "100dvh" }}>
       {/* ─── Mobile top header ─────────────────────────────────────── */}
@@ -97,6 +99,11 @@ export function AppShell({ children, filterCounts }: AppShellProps) {
           <SidebarLink href="/import/photo" icon={<Camera size={16} />}>
             Import from photo
           </SidebarLink>
+          {isOwner && (
+            <SidebarLink href="/settings" icon={<Settings size={16} />}>
+              Settings
+            </SidebarLink>
+          )}
           <DesktopRecipeFilters counts={filterCounts} />
         </nav>
 
@@ -148,6 +155,9 @@ export function AppShell({ children, filterCounts }: AppShellProps) {
         <MobileTab href="/recipes/new" icon={<PlusCircle size={20} />} label="New" />
         <MobileTab href="/import/url" icon={<Link2 size={20} />} label="Import URL" />
         <MobileTab href="/import/photo" icon={<Camera size={20} />} label="Photo" />
+        {isOwner && (
+          <MobileTab href="/settings" icon={<Settings size={20} />} label="Settings" />
+        )}
         <MobileRecipeFiltersTab counts={filterCounts} />
       </nav>
     </div>

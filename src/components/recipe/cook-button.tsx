@@ -2,14 +2,17 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ChefHat, Check } from "lucide-react";
+import Link from "next/link";
+import { ChefHat, Check, UtensilsCrossed } from "lucide-react";
 import { logCookEvent } from "@/app/(app)/recipes/actions";
 
 interface CookButtonProps {
   recipeId: string;
+  /** When provided, a "Start cooking mode" link is shown above the log button. */
+  slug?: string;
 }
 
-export function CookButton({ recipeId }: CookButtonProps) {
+export function CookButton({ recipeId, slug }: CookButtonProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [showNote, setShowNote] = useState(false);
@@ -59,6 +62,31 @@ export function CookButton({ recipeId }: CookButtonProps) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      {/* Start cooking mode link */}
+      {slug && (
+        <Link
+          href={`/recipes/${slug}/cook`}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 7,
+            padding: "10px 16px",
+            borderRadius: "var(--radius-md)",
+            border: "1px solid var(--accent-primary)",
+            backgroundColor: "transparent",
+            color: "var(--accent-primary)",
+            textDecoration: "none",
+            fontFamily: "var(--font-inter, sans-serif)",
+            fontSize: "0.875rem",
+            fontWeight: 600,
+          }}
+        >
+          <UtensilsCrossed size={15} />
+          Start cooking mode
+        </Link>
+      )}
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       {showNote && (
         <textarea
           value={note}
@@ -141,6 +169,7 @@ export function CookButton({ recipeId }: CookButtonProps) {
           {error}
         </p>
       )}
+      </div>
     </div>
   );
 }

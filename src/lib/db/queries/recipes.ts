@@ -247,6 +247,28 @@ export async function getRecipeByShareId(shareId: string): Promise<Recipe | null
   return rowToRecipe(data);
 }
 
+/**
+ * Returns all owner recipes ordered by category then title, with full content.
+ * Used by the printable cookbook page.
+ */
+export async function getAllOwnerRecipesForPrint(): Promise<Recipe[]> {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data } = await supabase
+    .from("recipes")
+    .select("*")
+    .eq("owner_id", user.id)
+    .order("category", { ascending: true })
+    .order("title", { ascending: true });
+
+  if (!data) return [];
+  return data.map(rowToRecipe);
+}
+
 /** Returns all unique tags across the owner's recipes, sorted. */
 export async function getOwnerTags(): Promise<string[]> {
   const supabase = await createServerSupabaseClient();

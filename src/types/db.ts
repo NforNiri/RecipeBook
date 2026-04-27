@@ -215,6 +215,24 @@ export type Database = {
         };
         Relationships: [];
       };
+      invites: {
+        Row: {
+          id: string;
+          email: string;
+          invited_by: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          email: string;
+          invited_by: string;
+          created_at?: string;
+        };
+        Update: {
+          email?: string;
+        };
+        Relationships: [];
+      };
       ai_jobs: {
         Row: {
           id: string;

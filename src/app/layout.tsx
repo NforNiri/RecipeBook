@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Fraunces, Source_Serif_4, Inter } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
+import "@/styles/print.css";
 
 // Variable fonts — do not specify `weight` alongside `axes`.
 const fraunces = Fraunces({

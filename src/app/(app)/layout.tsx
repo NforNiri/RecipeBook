@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getServerUser } from "@/lib/db/server";
+import { getServerProfile } from "@/lib/db/server";
 import { AppShell } from "@/components/layout/app-shell";
 import { getOwnerRecipeFilterCounts } from "@/lib/db/queries/recipes";
 
@@ -8,9 +8,13 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const user = await getServerUser();
-  if (!user) redirect("/login");
+  const profile = await getServerProfile();
+  if (!profile) redirect("/login");
   const filterCounts = await getOwnerRecipeFilterCounts();
 
-  return <AppShell filterCounts={filterCounts}>{children}</AppShell>;
+  return (
+    <AppShell filterCounts={filterCounts} role={profile.role}>
+      {children}
+    </AppShell>
+  );
 }

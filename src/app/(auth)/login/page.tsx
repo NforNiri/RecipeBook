@@ -18,11 +18,15 @@ export default async function LoginPage({
     redirect(`/callback?code=${params.code}`);
   }
 
-  const errorMessage = params.error_code
+  const isInviteOnly = params.error === "invite-only";
+
+  const errorMessage = isInviteOnly
+    ? undefined
+    : params.error_code
     ? (ERROR_MESSAGES[params.error_code] ?? "Sign-in failed. Please try again.")
     : params.error
     ? (ERROR_MESSAGES[params.error] ?? "Sign-in failed. Please try again.")
     : undefined;
 
-  return <LoginForm initialError={errorMessage} />;
+  return <LoginForm initialError={errorMessage} isInviteOnly={isInviteOnly} />;
 }

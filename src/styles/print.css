@@ -1,0 +1,197 @@
+/* ─── Print stylesheet ─────────────────────────────────────────────────────
+   Applied via @media print — also imported into the root layout so Next.js
+   bundles it. Produces a magazine-quality recipe layout.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+@media print {
+
+  /* ── Page setup ───────────────────────────────────────────────────────── */
+  @page {
+    margin: 2cm 2.5cm;
+  }
+
+  /* ── Base ─────────────────────────────────────────────────────────────── */
+  *,
+  *::before,
+  *::after {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  body {
+    font-size: 11pt;
+    background: white !important;
+    color: #1a1a1a !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ── Hide UI chrome ───────────────────────────────────────────────────── */
+
+  /* App shell: sidebar, mobile header, mobile bottom tab bar */
+  header,
+  aside,
+  nav,
+  /* Generic button/interactive elements */
+  button,
+  /* Anything explicitly tagged as no-print */
+  [data-no-print],
+  .no-print {
+    display: none !important;
+  }
+
+  /* ── Main content: remove layout offsets ────────────────────────────── */
+  main {
+    margin-left: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    min-height: auto !important;
+  }
+
+  /* ── Recipe page layout: single column, no grid gap ─────────────────── */
+  .recipe-layout {
+    display: block !important;
+  }
+
+  /* ── Hero image ──────────────────────────────────────────────────────── */
+  .recipe-hero {
+    width: 100%;
+    max-height: 260pt;
+    overflow: hidden;
+    border-radius: 0 !important;
+    margin-bottom: 1.5rem;
+    break-inside: avoid;
+  }
+
+  .recipe-hero img,
+  .recipe-hero [style*="aspect-ratio"] {
+    width: 100% !important;
+    height: 200pt !important;
+    max-height: 200pt !important;
+    object-fit: cover;
+    aspect-ratio: auto !important;
+  }
+
+  /* Force image colors through */
+  img {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* ── Typography ──────────────────────────────────────────────────────── */
+  h1 {
+    font-size: 2rem !important;
+    line-height: 1.15 !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  h2 {
+    font-size: 1.25rem !important;
+    line-height: 1.3 !important;
+    margin-top: 1.25rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  h3 {
+    font-size: 1.05rem !important;
+    line-height: 1.35 !important;
+  }
+
+  p, li {
+    font-size: 11pt;
+    line-height: 1.65;
+  }
+
+  /* ── Recipe description ──────────────────────────────────────────────── */
+  .recipe-description {
+    font-size: 12pt !important;
+    line-height: 1.6 !important;
+    margin-bottom: 1rem !important;
+    color: #444 !important;
+  }
+
+  /* ── Tags ────────────────────────────────────────────────────────────── */
+  .recipe-tags span {
+    border: 1px solid #ccc !important;
+    background: transparent !important;
+    color: #555 !important;
+  }
+
+  /* ── Section headings (Ingredients / Instructions) ───────────────────── */
+  .recipe-section-heading {
+    border-bottom: 1.5pt solid #1a1a1a !important;
+    padding-bottom: 4pt !important;
+    margin-bottom: 0.75rem !important;
+    break-after: avoid;
+  }
+
+  /* ── Ingredients list ────────────────────────────────────────────────── */
+  .recipe-ingredients {
+    break-inside: avoid;
+  }
+
+  .recipe-ingredients ul {
+    columns: 2;
+    column-gap: 2em;
+  }
+
+  .recipe-ingredients li {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* ── Instructions ────────────────────────────────────────────────────── */
+  .recipe-instructions p {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 0.6em;
+  }
+
+  /* ── Page breaks ─────────────────────────────────────────────────────── */
+  .print-page-break {
+    break-before: page;
+    page-break-before: always;
+  }
+
+  /* Keep section headers with their content */
+  h1, h2, h3, h4 {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  /* ── Links ───────────────────────────────────────────────────────────── */
+  a {
+    color: inherit !important;
+    text-decoration: none !important;
+  }
+
+  /* ── Cookbook print page: separator between recipes ─────────────────── */
+  .cookbook-recipe-block {
+    break-before: page;
+    page-break-before: always;
+  }
+
+  .cookbook-recipe-block:first-child {
+    break-before: auto;
+    page-break-before: auto;
+  }
+
+  /* ── Print-only elements: shown only when printing ───────────────────── */
+  .print-only {
+    display: block !important;
+  }
+
+  /* ── Two-column recipe layout: keep ingredients/instructions side-by-side */
+  .md\:grid-cols-\[260px_1fr\] {
+    grid-template-columns: 260px 1fr !important;
+  }
+
+  /* ── Cookbook ingredients: single column (already narrow) ───────────── */
+  .cookbook-recipe-block .recipe-ingredients ul,
+  article .recipe-ingredients ul {
+    columns: 1;
+  }
+
+}
