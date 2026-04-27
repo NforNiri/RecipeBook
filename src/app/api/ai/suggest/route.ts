@@ -103,7 +103,21 @@ export async function POST(request: Request): Promise<Response> {
   const jobId = jobRow.id;
 
   // ── Start streaming ───────────────────────────────────────────────────────
-  let { textStream, tokensUsed } = streamSuggestion({ recipe, mode });
+  // streamSuggestion can throw synchronously (e.g. missing API key). Catch it
+  // here so we return a clean JSON error instead of crashing the route and
+  // getting an HTML 500 that the client can't parse.
+  let textStream: ReadableStream<Uint8Array>;
+  let tokensUsed: Promise<number>;
+  try {
+    ({ textStream, tokensUsed } = streamSuggestion({ recipe, mode }));
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to start suggestion";
+    await supabase
+      .from("ai_jobs")
+      .update({ status: "error", error_message: message, completed_at: new Date().toISOString() })
+      .eq("id", jobId);
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 
   // Fire-and-forget: update the job row once the stream resolves token usage.
   tokensUsed
