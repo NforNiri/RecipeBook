@@ -158,7 +158,7 @@ export function TiptapEditor({ defaultContent, onChange }: TiptapEditorProps) {
         .from("recipes-images")
         .getPublicUrl(path);
 
-      editor.chain().focus().setImage({ src: urlData.publicUrl }).run();
+      editor?.chain().focus().setImage({ src: urlData.publicUrl }).run();
     } catch (err) {
       setImageError(
         err instanceof Error ? err.message : "Image upload failed. Please try again."
