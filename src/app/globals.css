@@ -1,0 +1,193 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* ─── Font variables ─────────────────────────────────────────── */
+@theme inline {
+  --font-display: var(--font-fraunces);
+  --font-serif: var(--font-source-serif);
+  --font-sans: var(--font-inter);
+
+  /* Color mappings → Tailwind utilities */
+  --color-canvas: var(--bg-canvas);
+  --color-surface: var(--bg-surface);
+  --color-elevated: var(--bg-elevated);
+  --color-muted-bg: var(--bg-muted);
+  --color-subtle: var(--bg-subtle);
+
+  --color-ink: var(--ink-primary);
+  --color-ink-secondary: var(--ink-secondary);
+  --color-ink-tertiary: var(--ink-tertiary);
+  --color-ink-inverse: var(--ink-inverse);
+
+  --color-accent: var(--accent-primary);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+
+  --color-border: var(--border-default);
+  --color-border-strong: var(--border-strong);
+  --color-border-focus: var(--border-focus);
+
+  --color-success: var(--status-success);
+  --color-warning: var(--status-warning);
+  --color-danger: var(--status-danger);
+  --color-info: var(--status-info);
+
+  /* Spacing scale (4px base) */
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-5: 20px;
+  --spacing-6: 24px;
+  --spacing-8: 32px;
+  --spacing-10: 40px;
+  --spacing-12: 48px;
+  --spacing-16: 64px;
+  --spacing-20: 80px;
+  --spacing-24: 96px;
+  --spacing-32: 128px;
+
+  /* Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 20px;
+  --radius-2xl: 28px;
+  --radius-full: 9999px;
+
+  /* Layout containers */
+  --container-prose: 65ch;
+  --container-app: 1280px;
+  --container-narrow: 720px;
+
+  /* Motion */
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 320ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* Shadows */
+  --shadow-sm: var(--shadow-sm-val);
+  --shadow-md: var(--shadow-md-val);
+  --shadow-lg: var(--shadow-lg-val);
+}
+
+/* ─── Light theme — Paper ────────────────────────────────────── */
+:root {
+  --bg-canvas:    oklch(98% 0.012 85);
+  --bg-surface:   oklch(96% 0.014 80);
+  --bg-elevated:  oklch(99% 0.008 85);
+  --bg-muted:     oklch(94% 0.018 80);
+  --bg-subtle:    oklch(97% 0.012 80);
+
+  --ink-primary:   oklch(20% 0.02 60);
+  --ink-secondary: oklch(38% 0.025 60);
+  --ink-tertiary:  oklch(55% 0.025 60);
+  --ink-inverse:   oklch(98% 0.012 85);
+
+  --accent-primary: oklch(58% 0.13 50);
+  --accent-hover:   oklch(52% 0.14 50);
+  --accent-soft:    oklch(92% 0.04 60);
+
+  --border-default: oklch(88% 0.015 70);
+  --border-strong:  oklch(72% 0.02 65);
+  --border-focus:   oklch(58% 0.13 50);
+
+  --shadow-sm-val: 0 1px 2px oklch(20% 0.02 60 / 0.06);
+  --shadow-md-val: 0 4px 12px oklch(20% 0.02 60 / 0.08);
+  --shadow-lg-val: 0 12px 32px oklch(20% 0.02 60 / 0.12);
+}
+
+/* ─── Dark theme — Ink ───────────────────────────────────────── */
+[data-theme="dark"] {
+  --bg-canvas:    oklch(14% 0.012 60);
+  --bg-surface:   oklch(18% 0.014 60);
+  --bg-elevated:  oklch(22% 0.014 60);
+  --bg-muted:     oklch(20% 0.014 60);
+  --bg-subtle:    oklch(17% 0.014 60);
+
+  --ink-primary:   oklch(94% 0.012 80);
+  --ink-secondary: oklch(75% 0.018 75);
+  --ink-tertiary:  oklch(55% 0.02 70);
+  --ink-inverse:   oklch(14% 0.012 60);
+
+  --accent-primary: oklch(72% 0.14 60);
+  --accent-hover:   oklch(78% 0.14 60);
+  --accent-soft:    oklch(28% 0.06 60);
+
+  --border-default: oklch(28% 0.018 65);
+  --border-strong:  oklch(40% 0.02 65);
+  --border-focus:   oklch(72% 0.14 60);
+
+  --shadow-sm-val: 0 1px 2px oklch(0% 0 0 / 0.3);
+  --shadow-md-val: 0 4px 12px oklch(0% 0 0 / 0.4);
+  --shadow-lg-val: 0 12px 32px oklch(0% 0 0 / 0.5);
+}
+
+/* ─── Semantic status colors ─────────────────────────────────── */
+:root {
+  --status-success: oklch(62% 0.13 145);
+  --status-warning: oklch(72% 0.15 80);
+  --status-danger:  oklch(58% 0.18 25);
+  --status-info:    oklch(60% 0.12 235);
+}
+
+/* ─── Base reset ─────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  height: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--bg-canvas);
+  color: var(--ink-primary);
+  font-family: var(--font-source-serif, Georgia, 'Times New Roman', serif);
+  min-height: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color var(--duration-base) var(--ease-out),
+              color var(--duration-base) var(--ease-out);
+}
+
+/* ─── Typography base ────────────────────────────────────────── */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-fraunces, Georgia, serif);
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+/* ─── Focus ring ─────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* ─── Utility animations ─────────────────────────────────────── */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes pulse-skeleton {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}
+
+/* ─── Recipe card hover (CSS-only so component can stay a Server Component) */
+.recipe-card {
+  transition:
+    box-shadow var(--duration-base) var(--ease-out),
+    transform var(--duration-base) var(--ease-out);
+}
+.recipe-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
