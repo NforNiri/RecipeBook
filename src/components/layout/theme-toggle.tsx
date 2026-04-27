@@ -1,28 +1,43 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useSyncExternalStore } from "react";
 import { Sun, Moon } from "lucide-react";
 
-export function ThemeToggle() {
-  // Always start as false so the server and first hydration render both show
-  // Moon (light mode). The anti-FOUC script in layout.tsx already applied the
-  // correct theme to the <html> element before first paint, so colors/backgrounds
-  // are correct. The icon corrects itself after mount via useEffect.
-  const [dark, setDark] = useState(false);
+const themeListeners = new Set<() => void>();
 
-  useEffect(() => {
-    setDark(document.documentElement.getAttribute("data-theme") === "dark");
-  }, []);
+function subscribeToTheme(listener: () => void) {
+  themeListeners.add(listener);
+  return () => themeListeners.delete(listener);
+}
+
+function getThemeSnapshot() {
+  return document.documentElement.getAttribute("data-theme") === "dark";
+}
+
+function getServerThemeSnapshot() {
+  return false;
+}
+
+function emitThemeChange() {
+  themeListeners.forEach((listener) => listener());
+}
+
+export function ThemeToggle() {
+  const dark = useSyncExternalStore(
+    subscribeToTheme,
+    getThemeSnapshot,
+    getServerThemeSnapshot
+  );
 
   function toggle() {
     const next = !dark;
-    setDark(next);
     document.documentElement.setAttribute("data-theme", next ? "dark" : "");
     try {
       localStorage.setItem("theme", next ? "dark" : "light");
     } catch {
       // localStorage may be unavailable in some browser contexts
     }
+    emitThemeChange();
   }
 
   return (

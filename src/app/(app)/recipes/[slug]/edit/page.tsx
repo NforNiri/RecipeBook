@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getRecipeBySlug, getOwnerTags } from "@/lib/db/queries/recipes";
 import { RecipeForm } from "@/components/recipe/recipe-form";
+import { SharingSection } from "@/components/recipe/sharing-section";
 import type { Metadata } from "next";
 
 interface PageProps {
@@ -56,6 +57,12 @@ export default async function EditRecipePage({ params }: PageProps) {
       </p>
 
       <RecipeForm mode="update" recipe={recipe} existingTags={existingTags} />
+
+      <SharingSection
+        recipeId={recipe.id}
+        isPublic={recipe.isPublic}
+        shareId={recipe.publicShareId}
+      />
     </div>
   );
 }

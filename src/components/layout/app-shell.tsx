@@ -1,13 +1,19 @@
 import Link from "next/link";
-import { BookOpen, PlusCircle } from "lucide-react";
+import { BookOpen, PlusCircle, Link2, Camera } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
 import { SignOutButton } from "./sign-out-button";
+import {
+  DesktopRecipeFilters,
+  MobileRecipeFiltersTab,
+} from "@/components/recipe/recipe-filters";
+import type { RecipeFilterCounts } from "@/lib/recipe/filter-options";
 
 interface AppShellProps {
   children: React.ReactNode;
+  filterCounts: RecipeFilterCounts;
 }
 
-export function AppShell({ children }: AppShellProps) {
+export function AppShell({ children, filterCounts }: AppShellProps) {
   return (
     <div style={{ display: "flex", minHeight: "100dvh" }}>
       {/* ─── Mobile top header ─────────────────────────────────────── */}
@@ -85,6 +91,13 @@ export function AppShell({ children }: AppShellProps) {
           <SidebarLink href="/recipes/new" icon={<PlusCircle size={16} />}>
             New Recipe
           </SidebarLink>
+          <SidebarLink href="/import/url" icon={<Link2 size={16} />}>
+            Import from URL
+          </SidebarLink>
+          <SidebarLink href="/import/photo" icon={<Camera size={16} />}>
+            Import from photo
+          </SidebarLink>
+          <DesktopRecipeFilters counts={filterCounts} />
         </nav>
 
         <div
@@ -133,17 +146,9 @@ export function AppShell({ children }: AppShellProps) {
       >
         <MobileTab href="/recipes" icon={<BookOpen size={20} />} label="Recipes" />
         <MobileTab href="/recipes/new" icon={<PlusCircle size={20} />} label="New" />
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 4,
-            padding: "8px 16px",
-          }}
-        >
-          <ThemeToggle />
-        </div>
+        <MobileTab href="/import/url" icon={<Link2 size={20} />} label="Import URL" />
+        <MobileTab href="/import/photo" icon={<Camera size={20} />} label="Photo" />
+        <MobileRecipeFiltersTab counts={filterCounts} />
       </nav>
     </div>
   );

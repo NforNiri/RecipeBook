@@ -1,9 +1,10 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { createServerSupabaseClient } from "@/lib/db/server";
 import { generateUniqueSlug, isSlugAvailable, validateSlug } from "@/lib/utils/slug";
-import type { Json, RecipeCategory } from "@/types/db";
+import type { Json, RecipeCategory, SourceType } from "@/types/db";
 import type { TiptapDocument, Ingredient } from "@/types/recipe";
 
 /** Cast our typed structures to Supabase's Json type for storage. */
@@ -24,6 +25,9 @@ export interface RecipeFormData {
   ingredients: Ingredient[];
   /** Only provided when the user manually edits the slug in the edit view. */
   slug?: string;
+  /** Populated by AI import flows to record where the recipe came from. */
+  sourceType?: SourceType;
+  sourceValue?: string;
 }
 
 export async function createRecipe(data: RecipeFormData): Promise<void> {
@@ -42,6 +46,8 @@ export async function createRecipe(data: RecipeFormData): Promise<void> {
     description: data.description || null,
     category: data.category,
     tags: data.tags,
+    source_type: data.sourceType ?? null,
+    source_value: data.sourceValue ?? null,
     prep_minutes: data.prepMinutes,
     cook_minutes: data.cookMinutes,
     servings: data.servings,
@@ -151,6 +157,88 @@ export async function upsertRating(
     { onConflict: "recipe_id" }
   );
   if (error) throw new Error(error.message);
+}
+
+// ── Public sharing ─────────────────────────────────────────────────────────
+
+/** Generates a 12-character URL-safe share ID using the Web Crypto API. */
+function generateShareId(): string {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  const bytes = new Uint8Array(12);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes)
+    .map((b) => chars[b % chars.length])
+    .join("");
+}
+
+/**
+ * Toggles the public visibility of a recipe.
+ * - Turning on: generates a public_share_id and sets is_public = true.
+ * - Turning off: sets is_public = false and clears public_share_id.
+ */
+export async function togglePublic(
+  recipeId: string,
+  makePublic: boolean
+): Promise<void> {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const updatePayload = makePublic
+    ? { is_public: true, public_share_id: generateShareId() }
+    : { is_public: false, public_share_id: null as string | null };
+
+  const { error } = await supabase
+    .from("recipes")
+    .update(updatePayload)
+    .eq("id", recipeId)
+    .eq("owner_id", user.id);
+
+  if (error) throw new Error(error.message);
+
+  const { data: recipe } = await supabase
+    .from("recipes")
+    .select("slug")
+    .eq("id", recipeId)
+    .single();
+
+  if (recipe) {
+    revalidatePath(`/recipes/${recipe.slug}/edit`);
+    revalidatePath(`/recipes/${recipe.slug}`);
+  }
+}
+
+/**
+ * Rotates the public_share_id without changing is_public.
+ * Useful if a share link is abused.
+ */
+export async function rotateShareId(recipeId: string): Promise<void> {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const { error } = await supabase
+    .from("recipes")
+    .update({ public_share_id: generateShareId() })
+    .eq("id", recipeId)
+    .eq("owner_id", user.id)
+    .eq("is_public", true);
+
+  if (error) throw new Error(error.message);
+
+  const { data: recipe } = await supabase
+    .from("recipes")
+    .select("slug")
+    .eq("id", recipeId)
+    .single();
+
+  if (recipe) {
+    revalidatePath(`/recipes/${recipe.slug}/edit`);
+  }
 }
 
 // ── Cook log ───────────────────────────────────────────────────────────────

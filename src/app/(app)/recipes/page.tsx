@@ -12,6 +12,7 @@ interface PageProps {
     category?: string;
     maxCook?: string;
     hasRating?: string;
+    rating?: string;
   }>;
 }
 
@@ -76,12 +77,10 @@ export default async function RecipesPage({ searchParams }: PageProps) {
         </Link>
       </div>
 
-      {/* Search + filters */}
+      {/* Search */}
       <RecipesSearch
+        key={filters.q ?? ""}
         initialQ={filters.q}
-        initialCategory={filters.category}
-        initialMaxCook={filters.maxCook}
-        initialHasRating={filters.hasRating}
       />
 
       {/* Results */}

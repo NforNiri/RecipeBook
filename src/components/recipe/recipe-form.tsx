@@ -7,6 +7,7 @@ import { TiptapEditor } from "@/components/editor/tiptap-editor";
 import { IngredientsEditor } from "@/components/editor/ingredients-editor";
 import { TagPicker } from "@/components/recipe/tag-picker";
 import { createRecipe, updateRecipe, deleteRecipe } from "@/app/(app)/recipes/actions";
+import type { RecipeFormData } from "@/app/(app)/recipes/actions";
 import { slugBase } from "@/lib/utils/slug";
 import type { RecipeCategory } from "@/types/db";
 import type { Recipe, Ingredient, TiptapDocument } from "@/types/recipe";
@@ -34,6 +35,8 @@ interface RecipeFormProps {
   mode: "create" | "update";
   recipe?: Recipe;
   existingTags?: string[];
+  /** Pre-fill form fields in create mode (used by AI import flows). */
+  prefill?: Partial<RecipeFormData>;
 }
 
 const inputStyle: React.CSSProperties = {
@@ -64,36 +67,48 @@ const fieldStyle: React.CSSProperties = {
   marginBottom: 24,
 };
 
-export function RecipeForm({ mode, recipe, existingTags = [] }: RecipeFormProps) {
+export function RecipeForm({ mode, recipe, existingTags = [], prefill }: RecipeFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [isDeleting, startDeleteTransition] = useTransition();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const [title, setTitle] = useState(recipe?.title ?? "");
-  const [description, setDescription] = useState(recipe?.description ?? "");
+  const [title, setTitle] = useState(recipe?.title ?? prefill?.title ?? "");
+  const [description, setDescription] = useState(recipe?.description ?? prefill?.description ?? "");
   const [category, setCategory] = useState<RecipeCategory>(
-    recipe?.category ?? "other"
+    recipe?.category ?? prefill?.category ?? "other"
   );
-  const [tags, setTags] = useState<string[]>(recipe?.tags ?? []);
+  const [tags, setTags] = useState<string[]>(recipe?.tags ?? prefill?.tags ?? []);
   const [prepMinutes, setPrepMinutes] = useState<string>(
-    recipe?.prepMinutes ? String(recipe.prepMinutes) : ""
+    recipe?.prepMinutes
+      ? String(recipe.prepMinutes)
+      : prefill?.prepMinutes
+      ? String(prefill.prepMinutes)
+      : ""
   );
   const [cookMinutes, setCookMinutes] = useState<string>(
-    recipe?.cookMinutes ? String(recipe.cookMinutes) : ""
+    recipe?.cookMinutes
+      ? String(recipe.cookMinutes)
+      : prefill?.cookMinutes
+      ? String(prefill.cookMinutes)
+      : ""
   );
   const [servings, setServings] = useState<string>(
-    recipe?.servings ? String(recipe.servings) : ""
+    recipe?.servings
+      ? String(recipe.servings)
+      : prefill?.servings
+      ? String(prefill.servings)
+      : ""
   );
   const [heroImageUrl, setHeroImageUrl] = useState<string | null>(
-    recipe?.heroImageUrl ?? null
+    recipe?.heroImageUrl ?? prefill?.heroImageUrl ?? null
   );
   const [slug, setSlug] = useState<string>(recipe?.slug ?? "");
   const [instructions, setInstructions] = useState<TiptapDocument>(
-    recipe?.instructions ?? EMPTY_DOC
+    recipe?.instructions ?? prefill?.instructions ?? EMPTY_DOC
   );
   const [ingredients, setIngredients] = useState<Ingredient[]>(
-    recipe?.ingredients ?? []
+    recipe?.ingredients ?? prefill?.ingredients ?? []
   );
   const [error, setError] = useState<string | null>(null);
 
@@ -118,6 +133,9 @@ export function RecipeForm({ mode, recipe, existingTags = [] }: RecipeFormProps)
       ingredients,
       // Only pass slug in update mode — create mode auto-generates it server-side
       ...(mode === "update" ? { slug: slug.trim() || undefined } : {}),
+      // Carry through AI import provenance if present
+      ...(prefill?.sourceType ? { sourceType: prefill.sourceType } : {}),
+      ...(prefill?.sourceValue ? { sourceValue: prefill.sourceValue } : {}),
     };
 
     startTransition(async () => {

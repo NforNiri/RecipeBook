@@ -2,13 +2,16 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Clock, Users, Pencil } from "lucide-react";
 import { getRecipeBySlug } from "@/lib/db/queries/recipes";
-import { getOwnerRating } from "@/lib/db/queries/ratings";
+import { getOwnerRating, getGuestRatingsSummary } from "@/lib/db/queries/ratings";
 import { RecipeHero } from "@/components/recipe/recipe-hero";
 import { InstructionsView } from "@/components/recipe/instructions-view";
 import { IngredientsList } from "@/components/recipe/ingredients-list";
 import { RatingStars } from "@/components/recipe/rating-stars";
 import { CookButton } from "@/components/recipe/cook-button";
 import { CookHistory } from "@/components/recipe/cook-history";
+// SuggestionsPanel is owner-only — absent from the public /r/[shareId] route.
+import { SuggestionsPanel } from "@/components/recipe/suggestions-panel";
+import { PublicRatingsPanel } from "@/components/recipe/public-ratings-panel";
 import type { Metadata } from "next";
 
 interface PageProps {
@@ -77,7 +80,10 @@ export default async function RecipePage({ params }: PageProps) {
   const recipe = await getRecipeBySlug(slug);
   if (!recipe) notFound();
 
-  const ownerRating = await getOwnerRating(recipe.id);
+  const [ownerRating, guestRatings] = await Promise.all([
+    getOwnerRating(recipe.id),
+    recipe.isPublic ? getGuestRatingsSummary(recipe.id) : null,
+  ]);
 
   const prepStr = formatTime(recipe.prepMinutes);
   const cookStr = formatTime(recipe.cookMinutes);
@@ -230,6 +236,9 @@ export default async function RecipePage({ params }: PageProps) {
             </h2>
             <InstructionsView doc={recipe.instructions} />
           </section>
+
+          {/* AI Suggestions — owner-only; absent from the public /r/[shareId] route */}
+          <SuggestionsPanel recipeId={recipe.id} />
         </div>
 
         {/* ─── Sidebar ─────────────────────────────────────────── */}
@@ -294,6 +303,11 @@ export default async function RecipePage({ params }: PageProps) {
             <div style={divider}>
               <CookHistory recipeId={recipe.id} />
             </div>
+
+            {/* Public guest ratings — only shown when recipe is public and has ratings */}
+            {recipe.isPublic && guestRatings && (
+              <PublicRatingsPanel summary={guestRatings} />
+            )}
           </div>
         </aside>
       </div>

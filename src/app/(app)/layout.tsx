@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getServerUser } from "@/lib/db/server";
 import { AppShell } from "@/components/layout/app-shell";
+import { getOwnerRecipeFilterCounts } from "@/lib/db/queries/recipes";
 
 export default async function AppLayout({
   children,
@@ -9,6 +10,7 @@ export default async function AppLayout({
 }) {
   const user = await getServerUser();
   if (!user) redirect("/login");
+  const filterCounts = await getOwnerRecipeFilterCounts();
 
-  return <AppShell>{children}</AppShell>;
+  return <AppShell filterCounts={filterCounts}>{children}</AppShell>;
 }
