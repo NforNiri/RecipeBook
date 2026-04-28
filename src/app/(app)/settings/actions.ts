@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
 import { createServerSupabaseClient, getServerProfile } from "@/lib/db/server";
 
@@ -14,11 +15,47 @@ async function requireOwner() {
   return profile;
 }
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/**
+ * Derive the app's public URL from the live request headers.
+ * Works automatically on localhost, Vercel previews, and production — no
+ * env var needed. Falls back to NEXT_PUBLIC_SITE_URL if set.
+ */
+async function getSiteUrl(): Promise<string> {
+  if (process.env.NEXT_PUBLIC_SITE_URL) {
+    return process.env.NEXT_PUBLIC_SITE_URL;
+  }
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
+  const proto = h.get("x-forwarded-proto") ?? (host.includes("localhost") ? "http" : "https");
+  return `${proto}://${host}`;
+}
+
+/** Send a magic-link email via a plain anon client (no session attached). */
+async function sendMagicLink(email: string): Promise<{ error: string | null }> {
+  const siteUrl = await getSiteUrl();
+  const anonClient = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+  const { error } = await anonClient.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: `${siteUrl}/callback`, shouldCreateUser: true },
+  });
+  return { error: error?.message ?? null };
+}
+
+function isRateLimitError(message: string): boolean {
+  const m = message.toLowerCase();
+  return m.includes("rate") || m.includes("limit") || m.includes("seconds") || m.includes("too many");
+}
+
 // ─── inviteFamily ─────────────────────────────────────────────────────────────
 
 export type InviteResult =
   | { ok: true }
-  | { ok: false; error: "already_invited" | "send_failed" | "unknown" };
+  | { ok: false; error: "already_invited" | "send_failed" | "rate_limited" | "unknown" };
 
 export async function inviteFamily(
   _prevState: InviteResult | null,
@@ -50,35 +87,41 @@ export async function inviteFamily(
     return { ok: false, error: "unknown" };
   }
 
-  // Send magic link using a plain anon client — NOT the session-aware SSR
-  // client. When the SSR client carries the owner's JWT, Supabase's /otp
-  // endpoint sees an already-authenticated user and may reject OTPs for a
-  // different email address. The anon client has no session, so the request
-  // goes through as a standard unauthenticated OTP call.
-  const siteUrl =
-    process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const { error: otpMessage } = await sendMagicLink(email);
 
-  const anonClient = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-
-  const { error: otpError } = await anonClient.auth.signInWithOtp({
-    email,
-    options: {
-      emailRedirectTo: `${siteUrl}/callback`,
-      shouldCreateUser: true,
-    },
-  });
-
-  if (otpError) {
-    console.error("[inviteFamily] OTP error:", otpError.message);
-    // Roll back the invite row so the state stays consistent.
+  if (otpMessage) {
+    console.error("[inviteFamily] OTP error:", otpMessage);
+    // Roll back the invite row so state stays consistent.
     await supabase.from("invites").delete().eq("email", email);
-    return { ok: false, error: "send_failed" };
+    return { ok: false, error: isRateLimitError(otpMessage) ? "rate_limited" : "send_failed" };
   }
 
   revalidatePath("/settings");
+  return { ok: true };
+}
+
+// ─── resendInvite ─────────────────────────────────────────────────────────────
+
+export type ResendResult =
+  | { ok: true }
+  | { ok: false; error: "rate_limited" | "send_failed" | "unknown" };
+
+export async function resendInvite(
+  _prevState: ResendResult | null,
+  formData: FormData
+): Promise<ResendResult> {
+  const email = formData.get("email") as string | null;
+  if (!email) return { ok: false, error: "unknown" };
+
+  await requireOwner();
+
+  const { error: otpMessage } = await sendMagicLink(email);
+
+  if (otpMessage) {
+    console.error("[resendInvite] OTP error:", otpMessage);
+    return { ok: false, error: isRateLimitError(otpMessage) ? "rate_limited" : "send_failed" };
+  }
+
   return { ok: true };
 }
 

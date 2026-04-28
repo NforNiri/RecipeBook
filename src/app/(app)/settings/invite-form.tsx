@@ -74,6 +74,20 @@ export function InviteForm() {
         </p>
       )}
 
+      {state?.ok === false && state.error === "rate_limited" && (
+        <p
+          style={{
+            width: "100%",
+            fontFamily: "var(--font-inter, sans-serif)",
+            fontSize: "0.875rem",
+            color: "var(--status-warning, #ca8a04)",
+          }}
+        >
+          Supabase rate-limits magic links to ~2 per hour per address. Wait an
+          hour, then use the Resend button next to the invite below.
+        </p>
+      )}
+
       {state?.ok === false && state.error === "send_failed" && (
         <p
           style={{
@@ -83,7 +97,7 @@ export function InviteForm() {
             color: "var(--status-danger)",
           }}
         >
-          The invite was saved but the email failed to send. Try again.
+          The invite was saved but the email failed to send. Try again shortly.
         </p>
       )}
 
@@ -96,7 +110,12 @@ export function InviteForm() {
             color: "var(--status-danger)",
           }}
         >
-          Something went wrong. Please try again.
+          Something went wrong. Make sure the Supabase invites table exists
+          (run the migration SQL from{" "}
+          <code style={{ fontSize: "0.8125rem" }}>
+            supabase/migrations/0003_invites.sql
+          </code>
+          ).
         </p>
       )}
     </form>

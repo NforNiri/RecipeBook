@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { removeInvite, type RemoveResult } from "./actions";
+import { removeInvite, resendInvite, type RemoveResult, type ResendResult } from "./actions";
 
 interface Invite {
   id: string;
@@ -37,6 +37,73 @@ function RemoveButton({ email }: { email: string }) {
         {isPending ? "Removing…" : "Remove"}
       </button>
     </form>
+  );
+}
+
+function ResendButton({ email }: { email: string }) {
+  const [state, formAction, isPending] = useActionState<ResendResult | null, FormData>(
+    resendInvite,
+    null
+  );
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+      <form action={formAction}>
+        <input type="hidden" name="email" value={email} />
+        <button
+          type="submit"
+          disabled={isPending}
+          style={{
+            padding: "0.25rem 0.75rem",
+            fontFamily: "var(--font-inter, sans-serif)",
+            fontSize: "0.8125rem",
+            fontWeight: 500,
+            color: "var(--ink-secondary)",
+            backgroundColor: "transparent",
+            border: "1px solid var(--border-default)",
+            borderRadius: "var(--radius-md)",
+            cursor: isPending ? "not-allowed" : "pointer",
+            opacity: isPending ? 0.5 : 1,
+          }}
+        >
+          {isPending ? "Sending…" : "Resend"}
+        </button>
+      </form>
+
+      {state?.ok === true && (
+        <span
+          style={{
+            fontFamily: "var(--font-inter, sans-serif)",
+            fontSize: "0.75rem",
+            color: "var(--status-success, #16a34a)",
+          }}
+        >
+          Sent!
+        </span>
+      )}
+      {state?.ok === false && state.error === "rate_limited" && (
+        <span
+          style={{
+            fontFamily: "var(--font-inter, sans-serif)",
+            fontSize: "0.75rem",
+            color: "var(--status-warning, #ca8a04)",
+          }}
+        >
+          Rate limited — wait an hour
+        </span>
+      )}
+      {state?.ok === false && state.error !== "rate_limited" && (
+        <span
+          style={{
+            fontFamily: "var(--font-inter, sans-serif)",
+            fontSize: "0.75rem",
+            color: "var(--status-danger)",
+          }}
+        >
+          Failed — try again
+        </span>
+      )}
+    </div>
   );
 }
 
@@ -93,6 +160,7 @@ export function InviteList({ invites }: { invites: Invite[] }) {
           >
             {new Date(invite.created_at).toLocaleDateString()}
           </span>
+          <ResendButton email={invite.email} />
           <RemoveButton email={invite.email} />
         </li>
       ))}
