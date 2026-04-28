@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { createClient } from "@supabase/supabase-js";
 import { createServerSupabaseClient, getServerProfile } from "@/lib/db/server";
 
 // ─── Guard ────────────────────────────────────────────────────────────────────
@@ -44,14 +45,25 @@ export async function inviteFamily(
     invited_by: profile.id,
   });
 
-  if (insertError) return { ok: false, error: "unknown" };
+  if (insertError) {
+    console.error("[inviteFamily] insert error:", insertError.message, insertError.code);
+    return { ok: false, error: "unknown" };
+  }
 
-  // Send magic link. signInWithOtp is a stateless call — it just triggers
-  // Supabase to email the link; it doesn't affect the owner's current session.
+  // Send magic link using a plain anon client — NOT the session-aware SSR
+  // client. When the SSR client carries the owner's JWT, Supabase's /otp
+  // endpoint sees an already-authenticated user and may reject OTPs for a
+  // different email address. The anon client has no session, so the request
+  // goes through as a standard unauthenticated OTP call.
   const siteUrl =
     process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
-  const { error: otpError } = await supabase.auth.signInWithOtp({
+  const anonClient = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+
+  const { error: otpError } = await anonClient.auth.signInWithOtp({
     email,
     options: {
       emailRedirectTo: `${siteUrl}/callback`,
@@ -60,6 +72,7 @@ export async function inviteFamily(
   });
 
   if (otpError) {
+    console.error("[inviteFamily] OTP error:", otpError.message);
     // Roll back the invite row so the state stays consistent.
     await supabase.from("invites").delete().eq("email", email);
     return { ok: false, error: "send_failed" };

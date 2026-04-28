@@ -505,18 +505,26 @@ export function CookingMode({ recipe, slug }: CookingModeProps) {
       )}
 
       {/* ── Main step content ── */}
+      {/* overflow:auto + justifyContent:center clips the top on tall steps.
+          Fix: flex-col on the parent, margin:auto on the inner div — this
+          centres when content fits and scrolls correctly when it overflows. */}
       <main
         style={{
           flex: 1,
           overflow: "auto",
           display: "flex",
           flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "40px 24px",
         }}
       >
-        <div style={{ maxWidth: 680, width: "100%", textAlign: "center" }}>
+        <div
+          style={{
+            maxWidth: 680,
+            width: "100%",
+            textAlign: "center",
+            margin: "auto",
+            padding: "40px 24px",
+          }}
+        >
           {/* Step text */}
           <div
             style={{
