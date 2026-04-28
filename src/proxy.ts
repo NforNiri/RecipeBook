@@ -65,8 +65,9 @@ export const config = {
   matcher: [
     /*
      * Match all request paths except static files.
-     * This regex avoids matching /_next/static, /_next/image, /public files.
+     * Excludes /_next/*, favicon.ico, and public-folder static assets
+     * (images, fonts, and .js files like theme-init.js).
      */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|js|css|woff2?|ttf|eot)$).*)",
   ],
 };
