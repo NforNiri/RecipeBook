@@ -37,9 +37,10 @@ export async function proxy(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  // Public routes: /login, /r/* (guest share), Next.js internals
+  // Public routes: /login, /callback (auth), /r/* (guest share), Next.js internals
   const isPublic =
     pathname.startsWith("/login") ||
+    pathname.startsWith("/callback") ||
     pathname.startsWith("/r/") ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api/auth") ||
